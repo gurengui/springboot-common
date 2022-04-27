@@ -5,13 +5,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.*;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.util.CollectionUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -730,4 +733,82 @@ public class RedisUtil {
     Set<ZSetOperations.TypedTuple<Object>> ret = zset.reverseRangeWithScores(key, start, end);
     return ret;
   }
+
+
+  private ThreadLocal<String> lockFlag = new ThreadLocal<String>();
+
+  private static final String UNLOCK_LUA;
+
+  static final long TIMEOUT_MILLIS = 30000;
+
+  static final int RETRY_TIMES = Integer.MAX_VALUE;
+
+  static final long SLEEP_MILLIS = 500;
+
+  static {
+    StringBuilder sb = new StringBuilder();
+    sb.append("if redis.call(\"get\",KEYS[1]) == ARGV[1] ");
+    sb.append("then ");
+    sb.append("    return redis.call(\"del\",KEYS[1]) ");
+    sb.append("else ");
+    sb.append("    return 0 ");
+    sb.append("end ");
+    UNLOCK_LUA = sb.toString();
+  }
+
+  /**
+   * redis锁
+   * @param key
+   * @param expire
+   * @param retryTimes
+   * @param sleepMillis
+   * @return
+   */
+  public boolean lock(String key, long expire, int retryTimes, long sleepMillis) {
+
+    boolean result = setRedis(key, expire);
+    // 如果获取锁失败，按照传入的重试次数进行重试
+    while ((!result) && retryTimes-- > 0) {
+      try {
+        log.debug("lock failed, retrying..." + retryTimes);
+        Thread.sleep(sleepMillis);
+      } catch (InterruptedException e) {
+        return false;
+      }
+      result = setRedis(key, expire);
+    }
+    return result;
+  }
+
+  /**
+   * 释放锁
+   * @param key
+   * @return
+   */
+  public boolean releaseLock(String key) {
+    try {
+      List<String> keys = new ArrayList<>();
+      keys.add(key);
+      String logFlag = lockFlag.get();
+      log.error("本地线程变量保存值："+logFlag);
+      DefaultRedisScript<Long> redisScript = new DefaultRedisScript<>(UNLOCK_LUA, Long.class);
+      Long result = redisTemplate.execute(redisScript, keys, logFlag);
+      return result != null && result > 0;
+    } catch (Exception e) {
+      log.error("release lock occured an exception", e);
+    } finally {
+      // 清除掉ThreadLocal中的数据，避免内存溢出
+      lockFlag.remove();
+    }
+    return false;
+  }
+
+
+  private boolean setRedis(String key, long expire) {
+    // 设置唯一值，防止被其他线程删除 锁
+    String uuid = UUID.randomUUID().toString();
+    lockFlag.set(uuid);
+    return redisTemplate.opsForValue().setIfAbsent(key, uuid, expire, TimeUnit.MILLISECONDS);
+  }
+
 }
