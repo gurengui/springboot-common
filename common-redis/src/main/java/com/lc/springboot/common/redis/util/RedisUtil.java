@@ -614,6 +614,17 @@ public class RedisUtil {
     return hash.get(key, hashKey);
   }
 
+  /**
+   * 哈希获取map列表size
+   *
+   * @param key 键
+   * @return
+   */
+  public Object hmSize(String key) {
+    HashOperations<String, Object, Object> hash = redisTemplate.opsForHash();
+    return hash.size(key);
+  }
+
   // ================================set=================================
 
   /**
@@ -790,7 +801,7 @@ public class RedisUtil {
       List<String> keys = new ArrayList<>();
       keys.add(key);
       String logFlag = lockFlag.get();
-      log.error("本地线程变量保存值："+logFlag);
+      log.info("本地线程变量保存值："+logFlag);
       DefaultRedisScript<Long> redisScript = new DefaultRedisScript<>(UNLOCK_LUA, Long.class);
       Long result = redisTemplate.execute(redisScript, keys, logFlag);
       return result != null && result > 0;
