@@ -33,7 +33,20 @@ public class AuthController {
    * @param userLoginRequest 用户登录请求对象
    * @return 用户登录返回详情（包括用户基本信息，角色信息，权限信息，菜单信息，令牌信息）
    */
-  @ApiOperation(value = "登录 (无需header token校验)")
+  @ApiOperation(value = "登录 密码未加密 (无需header token校验)")
+  @PostMapping(value = "/login1")
+  public BaseBeanResponse<AccessToken> login1(@RequestBody @Validated UserLoginRequest userLoginRequest) {
+    AccessToken login = authService.login1(userLoginRequest);
+    return new BaseBeanResponse<>(login);
+  }
+
+  /**
+   * 用户登录
+   *
+   * @param userLoginRequest 用户登录请求对象
+   * @return 用户登录返回详情（包括用户基本信息，角色信息，权限信息，菜单信息，令牌信息）
+   */
+  @ApiOperation(value = "登录 密码已加密 (无需header token校验)")
   @PostMapping(value = "/login")
   public BaseBeanResponse<AccessToken> login(@RequestBody @Validated UserLoginRequest userLoginRequest) {
     AccessToken login = authService.login(userLoginRequest);

@@ -16,4 +16,14 @@ public class UserProperties {
      */
     private boolean initSql = true;
 
+    /**
+     * rsa的私钥
+     */
+    private String rsaPrivateKey;
+
+    /**
+     * rsa的公钥
+     */
+    private String rsaPublicKey;
+
 }

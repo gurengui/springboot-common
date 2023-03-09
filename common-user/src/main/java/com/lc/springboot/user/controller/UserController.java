@@ -41,7 +41,22 @@ public class UserController {
    * @param userAddRequest 用户新增请求封装类
    * @return 用户基本信息
    */
-  @ApiOperation("创建用户")
+  @ApiOperation("创建用户 密码未加密")
+  @PostMapping(path = "/create1")
+  @Authorize({})
+  public BaseBeanResponse<UserUpdateRequest> create1(
+          @RequestBody @Validated UserAddRequest userAddRequest) {
+    UserUpdateRequest userUpdateRequest = userService.create1(userAddRequest);
+    return new BaseBeanResponse<>(userUpdateRequest);
+  }
+
+  /**
+   * 创建用户
+   *
+   * @param userAddRequest 用户新增请求封装类
+   * @return 用户基本信息
+   */
+  @ApiOperation("创建用户 密码已加密")
   @PostMapping(path = "/create")
   @Authorize({})
   public BaseBeanResponse<UserUpdateRequest> create(

@@ -2,6 +2,9 @@ package com.lc.springboot.user.service;
 
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.collection.ListUtil;
+import cn.hutool.crypto.SecureUtil;
+import cn.hutool.crypto.asymmetric.KeyType;
+import cn.hutool.crypto.asymmetric.RSA;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.lc.springboot.common.auth.AuthProperties;
@@ -10,6 +13,7 @@ import com.lc.springboot.common.redis.util.RedisUtil;
 import com.lc.springboot.user.auth.token.AccessToken;
 import com.lc.springboot.user.auth.token.AccessTokenGen;
 import com.lc.springboot.user.auth.token.AccessTokenUtil;
+import com.lc.springboot.user.config.UserProperties;
 import com.lc.springboot.user.dto.request.RefreshTokenRequest;
 import com.lc.springboot.user.dto.request.UserLoginRequest;
 import com.lc.springboot.user.dto.request.UserQueryRequest;
@@ -53,9 +57,51 @@ public class AuthService extends ServiceImpl<UserMapper, User> {
   @Autowired private RedisUtil redisUtil;
   @Resource private UserMapper userMapper;
   @Autowired private PasswordEncoder passwordEncoder;
+  @Autowired
+  private UserProperties userProperties;
 
   /**
-   * 用户登录
+   * 用户登录 密码未加密
+   *
+   * @param userLoginRequest 用户登录请求对象
+   * @return 用户令牌信息
+   */
+  public AccessToken login1(UserLoginRequest userLoginRequest) {
+    QueryWrapper queryWrapper = new QueryWrapper();
+    queryWrapper.eq(User.COL_USER_ACCOUNT, userLoginRequest.getUserAccount());
+    List<User> list = userMapper.selectList(queryWrapper);
+
+    if (CollectionUtil.isEmpty(list)) {
+      throw new ServiceException("账号或密码错误");
+    }
+
+    User user = list.get(0);
+
+    // 判断密码是否匹配
+    if (!passwordEncoder.matches(userLoginRequest.getUserPassword(), user.getUserPassword())) {
+      throw new ServiceException("账号或密码错误");
+    }
+
+    if (UserStatus.LOGOUT.getCode() == user.getStatus()) {
+      throw new ServiceException("用户已被注销");
+    }
+
+    // 令牌信息
+    // 获取系统定义的令牌过期时间
+    long accessTokenValiditySeconds = authProperties.getAccessTokenValiditySeconds();
+    // 生成令牌
+    AccessToken accessToken = AccessTokenGen.genAccessToken(accessTokenValiditySeconds);
+    // 删除原来保存在redis中用户信息
+    accessTokenUtil.removeUserCacheInfo(user.getId(), true);
+
+    // 保存用户信息到redis中,其实只保存了用户的主键编号，当调用
+    accessTokenUtil.saveUserInfo(accessToken, user.getId());
+
+    return accessToken;
+  }
+
+  /**
+   * 用户登录 密码已加密
    *
    * @param userLoginRequest 用户登录请求对象
    * @return 用户令牌信息
@@ -70,6 +116,11 @@ public class AuthService extends ServiceImpl<UserMapper, User> {
     }
 
     User user = list.get(0);
+
+    //密码解密
+    RSA rsa = SecureUtil.rsa(userProperties.getRsaPrivateKey(),null);
+    String password = rsa.decryptStr(userLoginRequest.getUserPassword(), KeyType.PrivateKey);
+    userLoginRequest.setUserPassword(password);
 
     // 判断密码是否匹配
     if (!passwordEncoder.matches(userLoginRequest.getUserPassword(), user.getUserPassword())) {

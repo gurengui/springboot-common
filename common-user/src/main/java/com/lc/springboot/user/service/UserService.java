@@ -1,5 +1,9 @@
 package com.lc.springboot.user.service;
 
+import cn.hutool.core.util.ReUtil;
+import cn.hutool.crypto.SecureUtil;
+import cn.hutool.crypto.asymmetric.KeyType;
+import cn.hutool.crypto.asymmetric.RSA;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.pagehelper.PageHelper;
@@ -7,6 +11,7 @@ import com.lc.springboot.common.api.MyPageInfo;
 import com.lc.springboot.common.api.ResultCode;
 import com.lc.springboot.common.error.ServiceException;
 import com.lc.springboot.common.utils.CollectionUtil;
+import com.lc.springboot.user.config.UserProperties;
 import com.lc.springboot.user.dto.request.UserAddRequest;
 import com.lc.springboot.user.dto.request.UserModPwdRequest;
 import com.lc.springboot.user.dto.request.UserQueryRequest;
@@ -18,6 +23,7 @@ import com.lc.springboot.user.mapper.UserRoleMapper;
 import com.lc.springboot.user.model.RolePrivilege;
 import com.lc.springboot.user.model.User;
 import com.lc.springboot.user.model.UserRole;
+import com.lc.springboot.user.util.AccountValidatorUtil;
 import com.lc.springboot.user.util.UserUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -50,15 +56,59 @@ public class UserService extends ServiceImpl<UserMapper, User> {
   @Autowired private PasswordEncoder passwordEncoder;
   @Autowired private UserRoleService userRoleService;
   @Resource private UserRoleMapper userRoleMapper;
+  @Autowired
+  private UserProperties userProperties;
 
   /**
-   * 创建用户
+   * 创建用户 密码未加密
+   *
+   * @param userAddRequest 用户新增对象
+   * @return 用户更新对象
+   */
+  @Transactional(rollbackFor = Exception.class)
+  public UserUpdateRequest create1(UserAddRequest userAddRequest) {
+
+    User user = convertToModel(userAddRequest);
+    user.setUserPassword(passwordEncoder.encode(userAddRequest.getUserPassword()));
+    // 默认设置为正常状态
+    user.setStatus(UserStatus.NORMAL.getCode());
+
+    userMapper.insert(user);
+    log.info("创建用户,{}", user);
+
+    // 创建对应的权限列表
+    List<UserRole> userRoleList = new ArrayList<>(userAddRequest.getRoleIds().size());
+    for (Long roleId : userAddRequest.getRoleIds()) {
+      if (roleId == 0L) {
+        continue;
+      }
+      UserRole userRole = new UserRole(user.getId(), roleId);
+      userRoleList.add(userRole);
+    }
+
+    userRoleService.saveBatch(userRoleList);
+
+    return convertToDto(user);
+  }
+
+  /**
+   * 创建用户 密码已加密
    *
    * @param userAddRequest 用户新增对象
    * @return 用户更新对象
    */
   @Transactional(rollbackFor = Exception.class)
   public UserUpdateRequest create(UserAddRequest userAddRequest) {
+    //解密
+    RSA rsa = SecureUtil.rsa(userProperties.getRsaPrivateKey(),null);
+    String password = rsa.decryptStr(userAddRequest.getUserPassword(), KeyType.PrivateKey);
+    //密码格式校验
+    boolean match = ReUtil.isMatch(AccountValidatorUtil.REGEX_PASSWORD2, password);
+    if (!match){
+      throw new ServiceException("密码格式错误");
+    }
+    userAddRequest.setUserPassword(password);
+
     User user = convertToModel(userAddRequest);
     user.setUserPassword(passwordEncoder.encode(userAddRequest.getUserPassword()));
     // 默认设置为正常状态

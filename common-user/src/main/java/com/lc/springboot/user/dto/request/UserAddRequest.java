@@ -32,7 +32,7 @@ public class UserAddRequest implements Serializable {
   @NotBlank(message = "用户账号不能为空")
   private String userAccount;
 
-  @ApiModelProperty(value = "用户密码", required = true)
+  @ApiModelProperty(value = "用户密码，传递时需先进行rsa加密，然后以base64字符串传递", required = true)
   @NotBlank(message = "用户密码不能为空")
   private String userPassword;
 
