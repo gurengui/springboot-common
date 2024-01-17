@@ -180,4 +180,17 @@ public class SysUtil {
 
     return request;
   }
+
+  /**
+   * 从上下文中获取Response对象
+   *
+   * @return Response对象
+   */
+  public static HttpServletResponse getResponse() {
+    ServletRequestAttributes ra =
+            (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+    HttpServletResponse response = ra.getResponse();
+
+    return response;
+  }
 }

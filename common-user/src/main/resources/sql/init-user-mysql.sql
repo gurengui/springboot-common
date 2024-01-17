@@ -96,7 +96,7 @@ create table SYS_USER
         primary key,
     USER_ACCOUNT  varchar(128)     null comment '用户账号',
     USER_PASSWORD varchar(128)     null comment '用户密码',
-    USER_TYPE     varchar(32)      null comment '用户类型',
+    USER_TYPE     varchar(32)      null comment '用户类型 | 1：局方 2：厂家 3：其他',
     USER_NAME     varchar(128)     null comment '用户名称',
     EMAIL         varchar(32)      null comment '电子邮件',
     PHONE         varchar(32)      null comment '手机号码',

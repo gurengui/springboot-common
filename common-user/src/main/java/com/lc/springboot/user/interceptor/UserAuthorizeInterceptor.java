@@ -2,6 +2,9 @@ package com.lc.springboot.user.interceptor;
 
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.ArrayUtil;
+import cn.hutool.http.HttpResponse;
+import cn.hutool.http.HttpUtil;
+import cn.hutool.system.SystemUtil;
 import com.lc.springboot.common.auth.AuthProperties;
 import com.lc.springboot.common.auth.AuthorizeInterceptor;
 import com.lc.springboot.common.auth.PermissionDeniedException;
@@ -9,6 +12,7 @@ import com.lc.springboot.common.error.ServiceException;
 import com.lc.springboot.common.holder.RequestUserHolder;
 import com.lc.springboot.common.redis.util.RedisUtil;
 import com.lc.springboot.common.utils.RequestUtil;
+import com.lc.springboot.common.utils.SysUtil;
 import com.lc.springboot.user.auth.token.AccessTokenUtil;
 import com.lc.springboot.user.constant.UserMenuConstant;
 import com.lc.springboot.user.dto.response.MenuLoginDetailResponse;
@@ -52,6 +56,10 @@ public class UserAuthorizeInterceptor extends AuthorizeInterceptor {
         // 将redis保存的用户信息提取出来,该值是在用户登录的时候保存到redis中的
         Long userId = accessTokenUtil.getUserId(authz);
         if (userId == null || userId == 0L) {
+            HttpServletResponse response = RequestUtil.getHttpResponse();
+            if( response != null){
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            }
             throw new PermissionDeniedException(authProperties.getErrorAuthorizationHeader());
         }
 

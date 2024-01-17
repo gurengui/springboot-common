@@ -64,7 +64,7 @@ public class HeXiaoZhuCodeGenerator {
         // 表前缀
         String tablePrefix = "hxz";
 
-        String[] tables = new String[]{"HXZ_SMART_OUTBOUND_RESULT"};
+        String[] tables = new String[]{"HXZ_TOKEN_NEW"};
 
 //    String[] tables = new String[] {};
         String likeTable = "HXZ_";

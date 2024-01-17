@@ -74,7 +74,7 @@ public class AuthController {
    */
   @ApiOperation(value = "登出")
   @PostMapping(value = "/logout")
-  @Authorize({})
+  @Authorize({UserMenuConstant.AUTHORIZATION_LIST})
   public BaseResponse logout() {
     accessTokenUtil.removeUserCacheInfo(AuthContext.getUserId(), true);
     return BaseResponse.success();

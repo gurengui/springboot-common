@@ -43,216 +43,262 @@ import java.util.stream.Collectors;
 /**
  * 用户业务处理类
  *
+ * @version 1.0
  * @author: liangc
  * @date: 2020-08-17 17:18
- * @version 1.0
  */
 @Service
 @Slf4j
 public class UserService extends ServiceImpl<UserMapper, User> {
 
-  @Autowired private ModelMapper modelMapper;
-  @Resource private UserMapper userMapper;
-  @Autowired private PasswordEncoder passwordEncoder;
-  @Autowired private UserRoleService userRoleService;
-  @Resource private UserRoleMapper userRoleMapper;
-  @Autowired
-  private UserProperties userProperties;
+    @Autowired
+    private ModelMapper modelMapper;
+    @Resource
+    private UserMapper userMapper;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    @Autowired
+    private UserRoleService userRoleService;
+    @Resource
+    private UserRoleMapper userRoleMapper;
+    @Autowired
+    private UserProperties userProperties;
 
-  /**
-   * 创建用户 密码未加密
-   *
-   * @param userAddRequest 用户新增对象
-   * @return 用户更新对象
-   */
-  @Transactional(rollbackFor = Exception.class)
-  public UserUpdateRequest create1(UserAddRequest userAddRequest) {
+    /**
+     * 创建用户 密码未加密
+     *
+     * @param userAddRequest 用户新增对象
+     * @return 用户更新对象
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public UserUpdateRequest create1(UserAddRequest userAddRequest) {
 
-    User user = convertToModel(userAddRequest);
-    user.setUserPassword(passwordEncoder.encode(userAddRequest.getUserPassword()));
-    // 默认设置为正常状态
-    user.setStatus(UserStatus.NORMAL.getCode());
+        User user = convertToModel(userAddRequest);
+        user.setUserPassword(passwordEncoder.encode(userAddRequest.getUserPassword()));
+        // 默认设置为正常状态
+        user.setStatus(UserStatus.NORMAL.getCode());
 
-    userMapper.insert(user);
-    log.info("创建用户,{}", user);
+        userMapper.insert(user);
+        log.info("创建用户,{}", user);
 
-    // 创建对应的权限列表
-    List<UserRole> userRoleList = new ArrayList<>(userAddRequest.getRoleIds().size());
-    for (Long roleId : userAddRequest.getRoleIds()) {
-      if (roleId == 0L) {
-        continue;
-      }
-      UserRole userRole = new UserRole(user.getId(), roleId);
-      userRoleList.add(userRole);
-    }
-
-    userRoleService.saveBatch(userRoleList);
-
-    return convertToDto(user);
-  }
-
-  /**
-   * 创建用户 密码已加密
-   *
-   * @param userAddRequest 用户新增对象
-   * @return 用户更新对象
-   */
-  @Transactional(rollbackFor = Exception.class)
-  public UserUpdateRequest create(UserAddRequest userAddRequest) {
-    //解密
-    RSA rsa = SecureUtil.rsa(userProperties.getRsaPrivateKey(),null);
-    String password = rsa.decryptStr(userAddRequest.getUserPassword(), KeyType.PrivateKey);
-    //密码格式校验
-    boolean match = ReUtil.isMatch(AccountValidatorUtil.REGEX_PASSWORD2, password);
-    if (!match){
-      throw new ServiceException("密码格式错误");
-    }
-    userAddRequest.setUserPassword(password);
-
-    User user = convertToModel(userAddRequest);
-    user.setUserPassword(passwordEncoder.encode(userAddRequest.getUserPassword()));
-    // 默认设置为正常状态
-    user.setStatus(UserStatus.NORMAL.getCode());
-
-    userMapper.insert(user);
-    log.info("创建用户,{}", user);
-
-    // 创建对应的权限列表
-    List<UserRole> userRoleList = new ArrayList<>(userAddRequest.getRoleIds().size());
-    for (Long roleId : userAddRequest.getRoleIds()) {
-      if (roleId == 0L) {
-        continue;
-      }
-      UserRole userRole = new UserRole(user.getId(), roleId);
-      userRoleList.add(userRole);
-    }
-
-    userRoleService.saveBatch(userRoleList);
-
-    return convertToDto(user);
-  }
-
-  /**
-   * 更新用户信息
-   *
-   * @param userUpdateRequest 用户更新对象
-   * @return 返回更新条数
-   */
-  @Transactional(rollbackFor = Exception.class)
-  public int updateUser(UserUpdateRequest userUpdateRequest) {
-    // 先取回之前数据
-    User user = getById(userUpdateRequest.getId());
-
-    // 如果不存在，需要报异常
-    if (user == null) {
-      throw new ServiceException(ResultCode.RECORD_NOT_FOUND);
-    }
-
-    user.setUserAccount(userUpdateRequest.getUserAccount());
-    user.setUserType(userUpdateRequest.getUserType());
-    user.setUserName(userUpdateRequest.getUserName());
-    user.setEmail(userUpdateRequest.getEmail());
-    user.setPhone(userUpdateRequest.getPhone());
-    user.setStatus(userUpdateRequest.getStatus());
-
-    int update = userMapper.updateById(user);
-
-    // 更新与角色的关系
-    QueryWrapper queryWrapper = new QueryWrapper();
-    queryWrapper.eq(UserRole.COL_USER_ID, userUpdateRequest.getId());
-    List<UserRole> userRoleList = userRoleMapper.selectList(queryWrapper);
-
-    List<Long> userRoleIdList =
-        userRoleList.stream().map(userRole -> userRole.getRoleId()).collect(Collectors.toList());
-
-    Collection sameList = CollectionUtil.getSame(userUpdateRequest.getRoleIds(), userRoleIdList);
-
-    // 删除不需要的
-    userRoleIdList.removeAll(sameList);
-
-    if (userRoleIdList.size() > 0) {
-      queryWrapper.clear();
-      queryWrapper.eq(RolePrivilege.COL_ROLE_ID, userUpdateRequest.getId());
-      queryWrapper.in(RolePrivilege.COL_PRIVILEGE_ID, userRoleIdList);
-      userRoleMapper.delete(queryWrapper);
-    }
-
-    // 新增新加的
-    userUpdateRequest.getRoleIds().removeAll(sameList);
-    userRoleList.clear();
-    if (userUpdateRequest.getRoleIds().size() > 0) {
-      // 创建对应的权限列表
-      for (Long roleId : userUpdateRequest.getRoleIds()) {
-        if (roleId == 0L) {
-          continue;
+        // 创建对应的权限列表
+        List<UserRole> userRoleList = new ArrayList<>(userAddRequest.getRoleIds().size());
+        for (Long roleId : userAddRequest.getRoleIds()) {
+            if (roleId == 0L) {
+                continue;
+            }
+            UserRole userRole = new UserRole(user.getId(), roleId);
+            userRoleList.add(userRole);
         }
-        UserRole userRole = new UserRole(userUpdateRequest.getId(), roleId);
-        userRoleList.add(userRole);
-      }
-      userRoleService.saveBatch(userRoleList);
+
+        userRoleService.saveBatch(userRoleList);
+
+        return convertToDto(user);
     }
 
-    return update;
-  }
+    /**
+     * 创建用户 密码已加密
+     *
+     * @param userAddRequest 用户新增对象
+     * @return 用户更新对象
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public UserUpdateRequest create(UserAddRequest userAddRequest) {
+        //解密
+        RSA rsa = SecureUtil.rsa(userProperties.getRsaPrivateKey(), null);
+        String password = rsa.decryptStr(userAddRequest.getUserPassword(), KeyType.PrivateKey);
+        //密码格式校验
+        boolean match = ReUtil.isMatch(AccountValidatorUtil.REGEX_PASSWORD2, password);
+        if (!match) {
+            throw new ServiceException("密码格式错误");
+        }
+        userAddRequest.setUserPassword(password);
 
-  /**
-   * @param userModPwdRequest 用户密码更新请求对象
-   * @return 返回更新条数
-   */
-  @Transactional(rollbackFor = Exception.class)
-  public int modPwd(UserModPwdRequest userModPwdRequest) {
+        User user = convertToModel(userAddRequest);
+        user.setUserPassword(passwordEncoder.encode(userAddRequest.getUserPassword()));
+        // 默认设置为正常状态
+        user.setStatus(UserStatus.NORMAL.getCode());
 
-    if (!StringUtils.equals(userModPwdRequest.getNewPwd(), userModPwdRequest.getNewPwdAgain())) {
-      throw new ServiceException(UserResultCode.PWD_NOT_SAME.getMsg());
+        userMapper.insert(user);
+        log.info("创建用户,{}", user);
+
+        // 创建对应的权限列表
+        List<UserRole> userRoleList = new ArrayList<>(userAddRequest.getRoleIds().size());
+        for (Long roleId : userAddRequest.getRoleIds()) {
+            if (roleId == 0L) {
+                continue;
+            }
+            UserRole userRole = new UserRole(user.getId(), roleId);
+            userRoleList.add(userRole);
+        }
+
+        userRoleService.saveBatch(userRoleList);
+
+        return convertToDto(user);
     }
 
-    Long userId = UserUtil.checkUserIdAndGet();
+    /**
+     * 更新用户信息
+     *
+     * @param userUpdateRequest 用户更新对象
+     * @return 返回更新条数
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public int updateUser(UserUpdateRequest userUpdateRequest) {
+        // 先取回之前数据
+        User user = getById(userUpdateRequest.getId());
 
-    // 先取回之前数据
-    User user = getById(userId);
+        // 如果不存在，需要报异常
+        if (user == null) {
+            throw new ServiceException(ResultCode.RECORD_NOT_FOUND);
+        }
 
-    // 如果不存在，需要报异常
-    if (user == null) {
-      throw new ServiceException(ResultCode.RECORD_NOT_FOUND);
+        user.setUserAccount(userUpdateRequest.getUserAccount());
+        user.setUserType(userUpdateRequest.getUserType());
+        user.setUserName(userUpdateRequest.getUserName());
+        user.setEmail(userUpdateRequest.getEmail());
+        user.setPhone(userUpdateRequest.getPhone());
+        user.setStatus(userUpdateRequest.getStatus());
+
+        int update = userMapper.updateById(user);
+
+        // 更新与角色的关系
+        QueryWrapper queryWrapper = new QueryWrapper();
+        queryWrapper.eq(UserRole.COL_USER_ID, userUpdateRequest.getId());
+        List<UserRole> userRoleList = userRoleMapper.selectList(queryWrapper);
+
+        List<Long> userRoleIdList =
+                userRoleList.stream().map(userRole -> userRole.getRoleId()).collect(Collectors.toList());
+
+        Collection sameList = CollectionUtil.getSame(userUpdateRequest.getRoleIds(), userRoleIdList);
+
+        // 删除不需要的
+        userRoleIdList.removeAll(sameList);
+
+        if (userRoleIdList.size() > 0) {
+            queryWrapper.clear();
+            queryWrapper.eq(RolePrivilege.COL_ROLE_ID, userUpdateRequest.getId());
+            queryWrapper.in(RolePrivilege.COL_PRIVILEGE_ID, userRoleIdList);
+            userRoleMapper.delete(queryWrapper);
+        }
+
+        // 新增新加的
+        userUpdateRequest.getRoleIds().removeAll(sameList);
+        userRoleList.clear();
+        if (userUpdateRequest.getRoleIds().size() > 0) {
+            // 创建对应的权限列表
+            for (Long roleId : userUpdateRequest.getRoleIds()) {
+                if (roleId == 0L) {
+                    continue;
+                }
+                UserRole userRole = new UserRole(userUpdateRequest.getId(), roleId);
+                userRoleList.add(userRole);
+            }
+            userRoleService.saveBatch(userRoleList);
+        }
+
+        return update;
     }
 
-    // 执行用户更新操作
-    user.setUserPassword(passwordEncoder.encode(userModPwdRequest.getNewPwd()));
+    /**
+     * @param userModPwdRequest 用户密码更新请求对象，密码加密后的
+     * @return 返回更新条数
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public int modPwdNew(UserModPwdRequest userModPwdRequest) {
+        if (!StringUtils.equals(userModPwdRequest.getNewPwd(), userModPwdRequest.getNewPwdAgain())) {
+            throw new ServiceException(UserResultCode.PWD_NOT_SAME.getMsg());
+        }
 
-    return userMapper.updateById(user);
-  }
+        Long userId = UserUtil.checkUserIdAndGet();
 
-  /**
-   * 获取用户列表信息
-   *
-   * @param userQueryRequest 用户查询对象
-   * @param pageable 分页信息
-   * @return 用户结果集
-   */
-  public MyPageInfo<User> list(UserQueryRequest userQueryRequest, Pageable pageable) {
-    PageHelper.startPage(pageable.getPageNumber(), pageable.getPageSize());
-    QueryWrapper<User> mapper = new QueryWrapper(convertToModel(userQueryRequest));
-    mapper.ge(
-        userQueryRequest.getQueryStartDate() != null,
-        User.COL_CREATED_TIME,
-        userQueryRequest.getQueryStartDate());
-    mapper.le(
-        userQueryRequest.getQueryEndDate() != null,
-        User.COL_CREATED_TIME,
-        userQueryRequest.getQueryEndDate());
-    mapper.orderByDesc(User.COL_CREATED_TIME);
-    return new MyPageInfo(userMapper.selectList(mapper));
-  }
+        // 先取回之前数据
+        User user = getById(userId);
 
-  private UserUpdateRequest convertToDto(User user) {
-    return modelMapper.map(user, UserUpdateRequest.class);
-  }
+        // 如果不存在，需要报异常
+        if (user == null) {
+            throw new ServiceException(ResultCode.RECORD_NOT_FOUND);
+        }
 
-  private User convertToModel(UserAddRequest userAddRequest) {
-    return modelMapper.map(userAddRequest, User.class);
-  }
+        //解密
+        RSA rsa = SecureUtil.rsa(userProperties.getRsaPrivateKey(), null);
+        String oldPwd = rsa.decryptStr(userModPwdRequest.getOldPwd(), KeyType.PrivateKey);
+        // 判断密码是否匹配
+        if (!passwordEncoder.matches(oldPwd, user.getUserPassword())) {
+            throw new ServiceException("原始密码错误");
+        }
 
-  private User convertToModel(UserQueryRequest userQueryRequest) {
-    return modelMapper.map(userQueryRequest, User.class);
-  }
+        String password = rsa.decryptStr(userModPwdRequest.getNewPwd(), KeyType.PrivateKey);
+        //密码格式校验
+        boolean match = ReUtil.isMatch(AccountValidatorUtil.REGEX_PASSWORD2, password);
+        if (!match) {
+            throw new ServiceException("密码格式错误，请至少包含大小写字母、数字和符号中的三种");
+        }
+
+        // 执行用户更新操作
+        user.setUserPassword(passwordEncoder.encode(password));
+
+        return userMapper.updateById(user);
+    }
+
+    /**
+     * @param userModPwdRequest 用户密码更新请求对象
+     * @return 返回更新条数
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public int modPwd(UserModPwdRequest userModPwdRequest) {
+
+        if (!StringUtils.equals(userModPwdRequest.getNewPwd(), userModPwdRequest.getNewPwdAgain())) {
+            throw new ServiceException(UserResultCode.PWD_NOT_SAME.getMsg());
+        }
+
+        Long userId = UserUtil.checkUserIdAndGet();
+
+        // 先取回之前数据
+        User user = getById(userId);
+
+        // 如果不存在，需要报异常
+        if (user == null) {
+            throw new ServiceException(ResultCode.RECORD_NOT_FOUND);
+        }
+
+        // 执行用户更新操作
+        user.setUserPassword(passwordEncoder.encode(userModPwdRequest.getNewPwd()));
+
+        return userMapper.updateById(user);
+    }
+
+    /**
+     * 获取用户列表信息
+     *
+     * @param userQueryRequest 用户查询对象
+     * @param pageable         分页信息
+     * @return 用户结果集
+     */
+    public MyPageInfo<User> list(UserQueryRequest userQueryRequest, Pageable pageable) {
+        PageHelper.startPage(pageable.getPageNumber(), pageable.getPageSize());
+        QueryWrapper<User> mapper = new QueryWrapper(convertToModel(userQueryRequest));
+        mapper.ge(
+                userQueryRequest.getQueryStartDate() != null,
+                User.COL_CREATED_TIME,
+                userQueryRequest.getQueryStartDate());
+        mapper.le(
+                userQueryRequest.getQueryEndDate() != null,
+                User.COL_CREATED_TIME,
+                userQueryRequest.getQueryEndDate());
+        mapper.orderByDesc(User.COL_CREATED_TIME);
+        return new MyPageInfo(userMapper.selectList(mapper));
+    }
+
+    private UserUpdateRequest convertToDto(User user) {
+        return modelMapper.map(user, UserUpdateRequest.class);
+    }
+
+    private User convertToModel(UserAddRequest userAddRequest) {
+        return modelMapper.map(userAddRequest, User.class);
+    }
+
+    private User convertToModel(UserQueryRequest userQueryRequest) {
+        return modelMapper.map(userQueryRequest, User.class);
+    }
 }

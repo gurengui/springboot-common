@@ -620,7 +620,7 @@ public class RedisUtil {
    * @param key 键
    * @return
    */
-  public Object hmSize(String key) {
+  public Long hmSize(String key) {
     HashOperations<String, Object, Object> hash = redisTemplate.opsForHash();
     return hash.size(key);
   }

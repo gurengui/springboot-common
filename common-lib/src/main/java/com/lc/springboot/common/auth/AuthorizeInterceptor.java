@@ -53,6 +53,7 @@ public abstract class AuthorizeInterceptor extends HandlerInterceptorAdapter {
         }
 
         if (StringUtils.isEmpty(authz)) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             throw new PermissionDeniedException(authProperties.getErrorMsgMissingAuthHeader());
         }
 

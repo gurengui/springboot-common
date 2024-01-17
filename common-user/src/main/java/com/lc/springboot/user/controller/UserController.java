@@ -138,4 +138,12 @@ public class UserController {
     userService.modPwd(userModPwdRequest);
     return BaseResponse.success();
   }
+
+  @ApiOperation("修改密码，加密后的")
+  @PostMapping(path = "/modPwdNew")
+  @Authorize({})
+  public BaseResponse modPwdNew(@RequestBody UserModPwdRequest userModPwdRequest) {
+    userService.modPwdNew(userModPwdRequest);
+    return BaseResponse.success();
+  }
 }
