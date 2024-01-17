@@ -13,7 +13,7 @@
 ### Maven
 先clone代码到本地
 ```shell script
-git clone https://github.com/ruanpanliang/springboot-common.git
+git clone https://github.com/gurengui/springboot-common.git
 ```
 进入下载目录对应根目录，执行
 ```shell script
