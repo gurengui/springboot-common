@@ -49,22 +49,15 @@ public class HeXiaoZhuCodeGenerator {
         String dbDriverName = "com.mysql.cj.jdbc.Driver";
 
         //本地测试
-//        String dbUserName = "root";
-//        String dbPassword = "123456";
-//        String dbUrl = "jdbc:mysql://localhost:3306/hexiaozhu_local";
-
-//        String dbUserName = "root";
-//        String dbPassword = "1qaz@WSX";
-//        String dbUrl = "jdbc:mysql://20.26.20.104:3306/hexiaozhu";
-
         String dbUserName = "root";
-        String dbPassword = "you@123HAHA";
-        String dbUrl = "jdbc:mysql://20.26.103.100:3306/hexiaozhu";
+        String dbPassword = "123456";
+        String dbUrl = "jdbc:mysql://localhost:3306/hexiaozhu_local";
+
 
         // 表前缀
         String tablePrefix = "hxz";
 
-        String[] tables = new String[]{"HXZ_TOKEN_NEW"};
+        String[] tables = new String[]{""};
 
 //    String[] tables = new String[] {};
         String likeTable = "HXZ_";
