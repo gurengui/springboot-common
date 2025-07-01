@@ -33,12 +33,19 @@ public class BaseResponse implements Serializable {
     return code == ResultCode.SUCCESS;
   }
 
+//  public static BaseResponse success() {
+//    return SUCCESS;
+//  }
   public static BaseResponse success() {
-    return SUCCESS;
+    return new BaseResponse("", ResultCode.SUCCESS);
   }
 
+//  public static BaseResponse failure() {
+//    return FAILURE;
+//  }
+
   public static BaseResponse failure() {
-    return FAILURE;
+    return new BaseResponse("", ResultCode.FAILURE);
   }
 
   public static BaseResponse failure(String msg) {

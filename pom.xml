@@ -182,7 +182,7 @@
             <dependency>
                 <groupId>com.lc</groupId>
                 <artifactId>common-lib</artifactId>
-                <version>${project.version}</version>
+                <version>1.0.1</version>
             </dependency>
             <dependency>
                 <groupId>com.lc</groupId>
@@ -291,6 +291,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
+                <version>3.3.0</version>
                 <executions>
                     <execution>
                         <id>attach-sources</id>
@@ -315,43 +316,43 @@
         </plugins>
     </build>
 
-    <repositories>
-        <repository>
-            <id>aliyun-repos</id>
-            <url>https://maven.aliyun.com/nexus/content/groups/public</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>spring-milestones</id>
-            <name>Spring Milestones</name>
-            <url>https://maven.aliyun.com/repository/spring</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <!--        <repository>-->
-        <!--            <id>oss-public</id>-->
-        <!--            <url>https://oss.sonatype.org/content/repositories/public</url>-->
-        <!--        </repository>-->
-        <!--        <repository>-->
-        <!--            <id>snapshot</id>-->
-        <!--            <name>mp-snapshot</name>-->
-        <!--            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>-->
-        <!--            <snapshots>-->
-        <!--                <enabled>true</enabled>-->
-        <!--            </snapshots>-->
-        <!--        </repository>-->
-    </repositories>
+<!--    <repositories>-->
+<!--        <repository>-->
+<!--            <id>aliyun-repos</id>-->
+<!--            <url>https://maven.aliyun.com/nexus/content/groups/public</url>-->
+<!--            <snapshots>-->
+<!--                <enabled>false</enabled>-->
+<!--            </snapshots>-->
+<!--        </repository>-->
+<!--        <repository>-->
+<!--            <id>spring-milestones</id>-->
+<!--            <name>Spring Milestones</name>-->
+<!--            <url>https://maven.aliyun.com/repository/spring</url>-->
+<!--            <snapshots>-->
+<!--                <enabled>false</enabled>-->
+<!--            </snapshots>-->
+<!--        </repository>-->
+<!--        &lt;!&ndash;        <repository>&ndash;&gt;-->
+<!--        &lt;!&ndash;            <id>oss-public</id>&ndash;&gt;-->
+<!--        &lt;!&ndash;            <url>https://oss.sonatype.org/content/repositories/public</url>&ndash;&gt;-->
+<!--        &lt;!&ndash;        </repository>&ndash;&gt;-->
+<!--        &lt;!&ndash;        <repository>&ndash;&gt;-->
+<!--        &lt;!&ndash;            <id>snapshot</id>&ndash;&gt;-->
+<!--        &lt;!&ndash;            <name>mp-snapshot</name>&ndash;&gt;-->
+<!--        &lt;!&ndash;            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>&ndash;&gt;-->
+<!--        &lt;!&ndash;            <snapshots>&ndash;&gt;-->
+<!--        &lt;!&ndash;                <enabled>true</enabled>&ndash;&gt;-->
+<!--        &lt;!&ndash;            </snapshots>&ndash;&gt;-->
+<!--        &lt;!&ndash;        </repository>&ndash;&gt;-->
+<!--    </repositories>-->
 
-    <pluginRepositories>
-        <pluginRepository>
-            <id>aliyun-plugin</id>
-            <url>https://maven.aliyun.com/repository/spring</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </pluginRepository>
-    </pluginRepositories>
+<!--    <pluginRepositories>-->
+<!--        <pluginRepository>-->
+<!--            <id>aliyun-plugin</id>-->
+<!--            <url>https://maven.aliyun.com/repository/spring</url>-->
+<!--            <snapshots>-->
+<!--                <enabled>false</enabled>-->
+<!--            </snapshots>-->
+<!--        </pluginRepository>-->
+<!--    </pluginRepositories>-->
 </project>
